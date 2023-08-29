@@ -1,98 +1,108 @@
 ﻿using System.Text.Json;
+using Autofac;
+using serialization.Common;
+using serialization.Common.Factories;
+using serialization.Common.Providers;
+using serialization.Interfaces;
+using serialization.Models;
 
-class Person
-{
-    public Int32 Id { get; set; }
-    public Guid TransportId { get; set; }
-    public String FirstName { get; set; }
-    public String LastName { get; set; }
-    public Int32 SequenceId { get; set; }
-    public String[] CreditCardNumbers { get; set; }
-    public Int32 Age { get; set; }
-    public String[] Phones { get; set; }
-    public Int64 BirthDate { get; set; }
-    public Double Salary { get; set; }
-    public Boolean IsMarred { get; set; }
-    public Gender Gender { get; set; }
-    public Child[] Children { get; set; }
-}
-
-class Child
-{
-    public Int32 Id { get; set; }
-    public String FirstName { get; set; }
-    public String LastName { get; set; }
-    public Int64 BirthDate { get; set; }
-    public Gender Gender { get; set; }
-}
-
-enum Gender
-{
-    Male,
-    Female
-}
+namespace serialization;
 
 internal class Program
 {
     static string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-    static string fileName = "Persons.json";
-    static string filePath = Path.Combine(desktopPath, fileName);
-
-    static ICollection<Person> GenerateRandomlyPersons(int count = 10000)
+    static string filePath = Path.Combine(desktopPath, Constants.FILENAME);
+    
+    public static async Task Main(string[] args)
     {
-        ICollection<Person> persons = new List<Person>();
+        RegisterDependencies();
+        await PerformActionAsync();
 
-        for (int i = 1; i <= count; i++)
-        {
-            var birthDate = DateTimeOffset.UtcNow;
-
-            persons.Add(new Person
-            {
-                Id = i,
-                TransportId = Guid.NewGuid(),
-                FirstName = "FirstName",
-                LastName = "LastName",
-                SequenceId = i,
-                CreditCardNumbers = new string[] { "Credit Card" },
-                Age = new Random().Next(18, 61),
-                Phones = new string[] { "Phone" },
-                BirthDate = birthDate.ToUnixTimeSeconds(),
-                Salary = new Random().Next(1000, 10001),
-                IsMarred = new Random().Next(0, 2) == 1,
-                Gender = (Gender)new Random().Next(0, 2),
-                Children = new Child[] { }
-            });
-        }
-
-        return persons;
+        Console.WriteLine();
+        Console.WriteLine("OK");
+    }
+    
+    private static void RegisterDependencies()
+    {
+        Console.WriteLine("The beginning of dependencies injection...");
+        Builder.RegisterType<IdProvider>().As<IIdProvider>().SingleInstance();
+        Builder.RegisterType<TransportIdProvider>().As<ITransportIdProvider>().SingleInstance();
+        Builder.RegisterType<FirstNameProvider>().As<IFirstNameProvider>().SingleInstance();
+        Builder.RegisterType<LastNameProvider>().As<ILastNameProvider>().SingleInstance();
+        Builder.RegisterType<BirthDateProvider>().As<IBirthDateProvider>().SingleInstance();
+        Builder.RegisterType<CreditCardNumberProvider>().As<ICreditCardNumberProvider>().SingleInstance();
+        Builder.RegisterType<PhoneProvider>().As<IPhoneProvider>().SingleInstance();
+        Builder.RegisterType<SequenceIdProvider>().As<ISequenceIdProvider>().SingleInstance();
+        Builder.RegisterType<ChildFactory>().As<IChildFactory>().SingleInstance();
+        Builder.RegisterType<PersonFactory>().As<IPersonFactory>().SingleInstance();
+        Console.WriteLine("Dependencies has been injected.");
+        Console.WriteLine();
     }
 
-    static async Task WritePersonsAsJsonAsync(ICollection<Person> persons)
+    private static async Task PerformActionAsync()
     {
-        var options = new JsonSerializerOptions
+        var persons = GeneratePersonsRandomly();
+        
+        var options = GenerateJsonSerializerOptions();
+        
+        await WritePersonsAsJsonAsync(persons, options);
+
+        var readPersons = await ReadPersonsAsJsonAsync();
+
+        PrintPersons(readPersons);
+    }
+
+    private static JsonSerializerOptions GenerateJsonSerializerOptions()
+    {
+        return new JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
+    }
 
+    private static ICollection<Person> GeneratePersonsRandomly(int count = 10000)
+    {
+        using (var scope = Container.BeginLifetimeScope())
+        {
+            var personFactory = scope.Resolve<IPersonFactory>();
+            return personFactory.ProduceArrange(count);
+        }
+    }
+
+    static async Task WritePersonsAsJsonAsync(ICollection<Person> persons, JsonSerializerOptions? options = null)
+    {
         using (FileStream fs = new FileStream(filePath, FileMode.Create))
         {
-            await JsonSerializer.SerializeAsync(fs, persons, options);
-            Console.WriteLine("Data has been saved to file");
+            if (options != null)
+            {
+                await JsonSerializer.SerializeAsync(fs, persons, options);
+            }
+            else
+            {
+                await JsonSerializer.SerializeAsync(fs, persons);
+            }
+            Console.WriteLine("Data has been saved to file.");
         }
 
         persons.Clear();
-        Console.WriteLine("Data has been cleared from memory");
+        Console.WriteLine("Data has been cleared from memory.");
     }
 
     static async Task<ICollection<Person>> ReadPersonsAsJsonAsync()
     {
         ICollection<Person>? persons;
+        
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         using (FileStream fs = new FileStream(filePath, FileMode.Open))
         {
-            persons = await JsonSerializer.DeserializeAsync<ICollection<Person>>(fs);
-            Console.WriteLine("Data has been read from file");
+            persons = await JsonSerializer.DeserializeAsync<ICollection<Person>>(fs, options);
+            Console.WriteLine("Data has been read from file.");
+            Console.WriteLine();
         }
 
         return persons;
@@ -124,15 +134,11 @@ internal class Program
         Console.WriteLine(personsCreditCardCount);
         Console.WriteLine(personsAverageChildAge);
     }
+    
+    
+    private static IContainer _container;
+    public static IContainer Container => _container ?? (_container = Builder.Build());
 
-    public static async Task Main(string[] args)
-    {
-        var persons = GenerateRandomlyPersons();
-
-        await WritePersonsAsJsonAsync(persons);
-
-        var readPersons = await ReadPersonsAsJsonAsync();
-
-        PrintPersons(readPersons);
-    }
+    private static ContainerBuilder _builder;
+    public static ContainerBuilder Builder => _builder ?? (_builder = new ContainerBuilder());
 }
