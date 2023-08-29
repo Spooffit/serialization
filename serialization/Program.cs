@@ -115,7 +115,7 @@ internal class Program
 
         int personsAverageChildAge = (int)readPersons.Average(person =>
         {
-            double daysInYearsConsideringLeapYears = 365.25;
+            double daysInYearsConsideringLeapYears = 365.25; // leap years are included for better accuracy
 
             if (person.Children.Any())
             {
@@ -130,9 +130,9 @@ internal class Program
             }
         });
 
-        Console.WriteLine(personsCount);
-        Console.WriteLine(personsCreditCardCount);
-        Console.WriteLine(personsAverageChildAge);
+        Console.WriteLine($"Persons count: {personsCount}");
+        Console.WriteLine($"Persons credit card count: {personsCreditCardCount}");
+        Console.WriteLine($"Persons Average Child Age: {personsAverageChildAge}");
     }
     
     
