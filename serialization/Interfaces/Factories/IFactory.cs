@@ -1,4 +1,4 @@
-﻿namespace serialization.Interfaces;
+﻿namespace serialization.Interfaces.Factories;
 
 public interface IFactory<T>
 {

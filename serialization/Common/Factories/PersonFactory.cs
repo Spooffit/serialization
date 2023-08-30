@@ -1,5 +1,6 @@
 ﻿using serialization.Enums;
-using serialization.Interfaces;
+using serialization.Interfaces.Factories;
+using serialization.Interfaces.Providers;
 using serialization.Models;
 
 namespace serialization.Common.Factories;

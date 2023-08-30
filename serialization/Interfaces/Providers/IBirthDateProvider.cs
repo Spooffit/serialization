@@ -1,4 +1,4 @@
-﻿namespace serialization.Interfaces;
+﻿namespace serialization.Interfaces.Providers;
 
 public interface IBirthDateProvider : IProvider<DateTimeOffset>
 {

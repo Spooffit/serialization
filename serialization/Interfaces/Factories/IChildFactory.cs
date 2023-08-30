@@ -1,6 +1,6 @@
 ﻿using serialization.Models;
 
-namespace serialization.Interfaces;
+namespace serialization.Interfaces.Factories;
 
 public interface IChildFactory : IFactory<Child>
 {

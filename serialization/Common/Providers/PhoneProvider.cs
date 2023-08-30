@@ -1,4 +1,4 @@
-﻿using serialization.Interfaces;
+﻿using serialization.Interfaces.Providers;
 
 namespace serialization.Common.Providers;
 
