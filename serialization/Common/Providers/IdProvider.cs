@@ -4,7 +4,7 @@ namespace serialization.Common.Providers;
 
 public class IdProvider : IIdProvider
 {
-    private static int _ids = 1;
+    private static int _ids = 0;
     public int Provide()
     {
         return ++_ids;
