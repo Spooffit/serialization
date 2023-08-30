@@ -35,8 +35,8 @@ internal class Program
                 readOptions: readOptions, 
                 writeOptions: writeOptions);
 
-            await performer.WriteAsync(FilePath, persons);
-            var readPersons = await performer.ReadAsync(FilePath);
+            await performer.TryWriteAsync(FilePath, persons);
+            var readPersons = await performer.TryReadAsync(FilePath);
 
             readPersons.Print();
 
